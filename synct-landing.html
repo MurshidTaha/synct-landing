@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SyncT — Simple yet Networking Compatible</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080a0f;
+    --bg2: #0d1018;
+    --bg3: #111520;
+    --surface: #161b28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --accent: #3EE8B5;
+    --accent2: #2BC99A;
+    --accent-dim: rgba(62,232,181,0.12);
+    --accent-glow: rgba(62,232,181,0.25);
+    --blue: #4F8EF7;
+    --blue-dim: rgba(79,142,247,0.1);
+    --text: #F0F2F5;
+    --text2: #8B92A0;
+    --text3: #4A5160;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --font-serif: 'Instrument Serif', serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    position: fixed;
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 0.1s;
+    mix-blend-mode: screen;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 32px; height: 32px;
+    border: 1px solid rgba(62,232,181,0.4);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transition: transform 0.15s, width 0.2s, height 0.2s, border-color 0.2s;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  nav.scrolled {
+    border-color: var(--border);
+    background: rgba(8,10,15,0.85);
+    backdrop-filter: blur(20px);
+  }
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  .logo-mark {
+    width: 34px; height: 34px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 16px;
+    color: #080a0f;
+    letter-spacing: -0.5px;
+  }
+  .logo-text {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--accent) !important;
+    color: #080a0f !important;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-weight: 600 !important;
+    transition: opacity 0.2s !important;
+  }
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 120px 40px 80px;
+    position: relative;
+    overflow: hidden;
+    z-index: 2;
+  }
+
+  /* Animated grid background */
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 0%, transparent 100%);
+  }
+
+  /* Glowing orbs */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    animation: float 8s ease-in-out infinite;
+  }
+  .orb-1 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(62,232,181,0.15), transparent 70%);
+    top: -100px; left: -100px;
+    animation-delay: 0s;
+  }
+  .orb-2 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(79,142,247,0.12), transparent 70%);
+    bottom: 0; right: -80px;
+    animation-delay: -4s;
+  }
+  .orb-3 {
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(62,232,181,0.08), transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: -2s;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-30px); }
+  }
+
+  /* Badge */
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px 6px 10px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(62,232,181,0.25);
+    border-radius: 99px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.2s;
+  }
+  .badge-dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* Hero heading */
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(52px, 8vw, 96px);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -3px;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.4s;
+  }
+  .hero-title .line-1 { display: block; color: var(--text); }
+  .hero-title .line-2 {
+    display: block;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255,255,255,0.15);
+    position: relative;
+  }
+  .hero-title .accent-word {
+    color: var(--accent);
+    -webkit-text-stroke: 0;
+    font-style: italic;
+    font-family: var(--font-serif);
+    font-size: 1.05em;
+  }
+
+  .hero-sub {
+    font-size: clamp(16px, 2vw, 19px);
+    color: var(--text2);
+    max-width: 520px;
+    line-height: 1.7;
+    margin: 0 auto 40px;
+    font-weight: 400;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.6s;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.8s;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    background: var(--accent);
+    color: #080a0f;
+    border-radius: 10px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 15px;
+    text-decoration: none;
+    letter-spacing: -0.2px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 0 40px rgba(62,232,181,0.3);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 60px rgba(62,232,181,0.45);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 15px;
+    text-decoration: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .btn-secondary:hover {
+    border-color: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.04);
+  }
+
+  /* Scroll indicator */
+  .scroll-hint {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 1.2s;
+  }
+  .scroll-hint span {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .scroll-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+    animation: scrollDown 2s ease-in-out infinite;
+  }
+  @keyframes scrollDown {
+    0% { transform: scaleY(0); transform-origin: top; }
+    50% { transform: scaleY(1); transform-origin: top; }
+    51% { transform: scaleY(1); transform-origin: bottom; }
+    100% { transform: scaleY(0); transform-origin: bottom; }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    position: relative;
+    z-index: 2;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 40px;
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    overflow: hidden;
+  }
+  .stats-strip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(62,232,181,0.03), transparent);
+  }
+  .stat-item {
+    flex: 1;
+    max-width: 200px;
+    text-align: center;
+    padding: 0 32px;
+    border-right: 1px solid var(--border);
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-num {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .stat-num span { color: var(--accent); }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 6px;
+  }
+
+  /* ── SECTION BASE ── */
+  section {
+    position: relative;
+    z-index: 2;
+    padding: 120px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .section-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-tag::before {
+    content: '';
+    width: 20px; height: 1px;
+    background: var(--accent);
+  }
+  .section-title {
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+  .section-desc {
+    font-size: 17px;
+    color: var(--text2);
+    line-height: 1.7;
+    max-width: 480px;
+  }
+
+  /* ── FEATURES ── */
+  .features-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 64px;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .feature-card {
+    background: var(--bg2);
+    padding: 36px 32px;
+    transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 0% 0%, var(--accent-dim), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .feature-card:hover { background: var(--bg3); }
+  .feature-card:hover::before { opacity: 1; }
+
+  .feature-icon {
+    width: 44px; height: 44px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(62,232,181,0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    font-size: 20px;
+  }
+  .feature-name {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 10px;
+  }
+  .feature-desc {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+  .feature-tag {
+    display: inline-block;
+    margin-top: 16px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(62,232,181,0.15);
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .how-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+  .how-visual {
+    position: relative;
+    height: 480px;
+  }
+  /* Chat mockup */
+  .chat-window {
+    position: absolute;
+    width: 300px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+  }
+  .chat-window.main {
+    top: 0; left: 20px;
+    z-index: 2;
+    animation: floatCard 6s ease-in-out infinite;
+  }
+  .chat-window.secondary {
+    bottom: 0; right: 0;
+    width: 260px;
+    z-index: 1;
+    animation: floatCard 6s ease-in-out infinite reverse;
+  }
+  @keyframes floatCard {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-16px); }
+  }
+  .chat-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg3);
+  }
+  .chat-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #080a0f;
+    flex-shrink: 0;
+  }
+  .chat-name { font-size: 13px; font-weight: 600; }
+  .chat-status {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .chat-status::before {
+    content: '';
+    width: 5px; height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+  .chat-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .msg {
+    max-width: 80%;
+    padding: 9px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    position: relative;
+  }
+  .msg.them {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+    align-self: flex-start;
+  }
+  .msg.me {
+    background: var(--accent);
+    color: #080a0f;
+    border-bottom-right-radius: 4px;
+    align-self: flex-end;
+    font-weight: 500;
+  }
+  .msg-time {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+  .msg-time.right { text-align: right; }
+  /* Lock badge on chat */
+  .lock-badge {
+    position: absolute;
+    top: -10px; right: -10px;
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    box-shadow: 0 0 20px var(--accent-glow);
+    animation: glow 3s ease-in-out infinite;
+  }
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+    50% { box-shadow: 0 0 40px var(--accent-glow); }
+  }
+
+  /* Signal protocol badge */
+  .signal-badge {
+    position: absolute;
+    bottom: 120px; left: 0;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    animation: floatCard 5s ease-in-out infinite 1s;
+  }
+  .signal-badge-icon {
+    font-size: 22px;
+  }
+  .signal-badge-text { font-size: 12px; font-weight: 600; }
+  .signal-badge-sub { font-size: 10px; color: var(--text2); font-family: var(--font-mono); }
+
+  .how-steps { display: flex; flex-direction: column; gap: 0; }
+  .how-step {
+    display: flex;
+    gap: 24px;
+    padding: 28px 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .how-step:last-child { border-bottom: none; }
+  .step-num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 1px;
+    width: 24px;
+    padding-top: 4px;
+    flex-shrink: 0;
+  }
+  .step-body {}
+  .step-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 6px; }
+  .step-desc { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+  /* ── SECURITY SECTION ── */
+  .security-section {
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 100px 40px;
+  }
+  .security-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+  .security-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 32px;
+  }
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--border2);
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--bg3);
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .pill:hover {
+    border-color: rgba(62,232,181,0.3);
+    background: var(--accent-dim);
+  }
+  .pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  /* Terminal mockup */
+  .terminal {
+    background: #0a0d14;
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    overflow: hidden;
+    font-family: var(--font-mono);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+  }
+  .terminal-bar {
+    padding: 12px 16px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot.red { background: #FF5F57; }
+  .dot.yellow { background: #FFBD2E; }
+  .dot.green { background: #28C840; }
+  .terminal-title {
+    font-size: 11px;
+    color: var(--text3);
+    margin-left: auto;
+    margin-right: auto;
+    letter-spacing: 0.5px;
+  }
+  .terminal-body { padding: 24px; font-size: 12px; line-height: 2; }
+  .t-dim { color: var(--text3); }
+  .t-accent { color: var(--accent); }
+  .t-blue { color: var(--blue); }
+  .t-text { color: var(--text2); }
+  .t-white { color: var(--text); }
+  .t-cursor {
+    display: inline-block;
+    width: 7px; height: 14px;
+    background: var(--accent);
+    vertical-align: middle;
+    animation: blink 1s step-end infinite;
+    margin-left: 2px;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* ── CTA ── */
+  .cta-section {
+    text-align: center;
+    padding: 140px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(62,232,181,0.08), transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .cta-title {
+    font-size: clamp(42px, 6vw, 72px);
+    font-weight: 800;
+    letter-spacing: -2.5px;
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+  .cta-sub {
+    font-size: 17px;
+    color: var(--text2);
+    margin-bottom: 40px;
+    line-height: 1.6;
+  }
+  .cta-actions {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+  }
+  .store-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 22px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    text-decoration: none;
+    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  }
+  .store-btn:hover {
+    border-color: rgba(255,255,255,0.2);
+    background: var(--bg3);
+    transform: translateY(-2px);
+  }
+  .store-icon { font-size: 26px; line-height: 1; }
+  .store-sub { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .store-name { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+  .cta-note {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 2;
+    border-top: 1px solid var(--border);
+    padding: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .footer-copy {
+    font-size: 13px;
+    color: var(--text3);
+  }
+  .footer-copy a { color: var(--text2); text-decoration: none; }
+  .footer-links {
+    display: flex;
+    gap: 24px;
+    list-style: none;
+  }
+  .footer-links a {
+    font-size: 13px;
+    color: var(--text3);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--text); }
+
+  /* ── SCROLL ANIMATIONS ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    nav { padding: 16px 20px; }
+    .nav-links { display: none; }
+    section { padding: 80px 20px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .how-section { grid-template-columns: 1fr; }
+    .how-visual { display: none; }
+    .security-inner { grid-template-columns: 1fr; }
+    .stats-strip { flex-wrap: wrap; gap: 24px; }
+    .stat-item { border-right: none; }
+    footer { flex-direction: column; text-align: center; }
+    body { cursor: auto; }
+    .cursor, .cursor-ring { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ── NAV ── -->
+<nav id="nav">
+  <a href="#" class="nav-logo">
+    <div class="logo-mark">S</div>
+    <span class="logo-text">SyncT</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#security">Security</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#download" class="nav-cta">Get the app</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="hero-badge">
+    <span class="badge-dot"></span>
+    Signal Protocol Encrypted · End-to-End
+  </div>
+
+  <h1 class="hero-title">
+    <span class="line-1">Messaging that's</span>
+    <span class="line-2"><span class="accent-word">actually</span> private.</span>
+  </h1>
+
+  <p class="hero-sub">
+    SyncT is a privacy-first messenger built on the Signal Protocol. Fast, secure, and beautifully simple — the way communication should be.
+  </p>
+
+  <div class="hero-actions">
+    <a href="#download" class="btn-primary">
+      Download SyncT
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a href="#how" class="btn-secondary">
+      See how it works
+    </a>
+  </div>
+
+  <div class="scroll-hint">
+    <span>scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</div>
+
+<!-- ── STATS ── -->
+<div class="stats-strip">
+  <div class="stat-item reveal">
+    <div class="stat-num">256<span>-bit</span></div>
+    <div class="stat-label">AES Encryption</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-num">0<span>ms</span></div>
+    <div class="stat-label">Metadata stored</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-num">E2E</div>
+    <div class="stat-label">All messages</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-num">100<span>%</span></div>
+    <div class="stat-label">Open protocol</div>
+  </div>
+</div>
+
+<!-- ── FEATURES ── -->
+<section id="features">
+  <div class="features-header reveal">
+    <div>
+      <div class="section-tag">What you get</div>
+      <h2 class="section-title">Built different<br/>from the ground up.</h2>
+    </div>
+    <p class="section-desc">Every feature in SyncT is designed with one goal: give you total control over your conversations.</p>
+  </div>
+
+  <div class="features-grid reveal">
+    <div class="feature-card">
+      <div class="feature-icon">🔐</div>
+      <div class="feature-name">End-to-End Encryption</div>
+      <div class="feature-desc">Every message encrypted on your device before it leaves. Only you and your recipient can read it — nobody else, ever.</div>
+      <span class="feature-tag">Signal Protocol</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-name">Real-time Messaging</div>
+      <div class="feature-desc">Instant delivery powered by Socket.io. Messages arrive in milliseconds, with delivery and read receipts.</div>
+      <span class="feature-tag">WebSocket</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👥</div>
+      <div class="feature-name">Group Chats</div>
+      <div class="feature-desc">Create encrypted group conversations with invite links. Full admin controls — add, remove, and manage members.</div>
+      <span class="feature-tag">Multi-device</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📁</div>
+      <div class="feature-name">Media Sharing</div>
+      <div class="feature-desc">Share photos, videos, and files — all encrypted in transit and at rest. Stored securely on Backblaze B2.</div>
+      <span class="feature-tag">Encrypted storage</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌐</div>
+      <div class="feature-name">Multi-device support</div>
+      <div class="feature-desc">Link your tablet or second phone with a QR code. Your conversations sync seamlessly across all your devices.</div>
+      <span class="feature-tag">QR Link token</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📵</div>
+      <div class="feature-name">Zero metadata</div>
+      <div class="feature-desc">We don't log who you talk to, when, or how often. Your social graph is yours — we have no interest in it.</div>
+      <span class="feature-tag">Privacy-first</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section id="how" style="padding-top: 0;">
+  <div class="how-section">
+    <div class="how-visual reveal">
+      <!-- Main chat window -->
+      <div class="chat-window main">
+        <div class="lock-badge">🔒</div>
+        <div class="chat-header">
+          <div class="chat-avatar">A</div>
+          <div>
+            <div class="chat-name">Ayesha</div>
+            <div class="chat-status">online</div>
+          </div>
+        </div>
+        <div class="chat-body">
+          <div>
+            <div class="msg them">hey! did you get my file?</div>
+            <div class="msg-time">12:21 PM</div>
+          </div>
+          <div>
+            <div class="msg me">yes got it, all encrypted 🔐</div>
+            <div class="msg-time right">12:22 PM</div>
+          </div>
+          <div>
+            <div class="msg them">love how fast this is</div>
+            <div class="msg-time">12:22 PM</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signal badge -->
+      <div class="signal-badge">
+        <div class="signal-badge-icon">🛡️</div>
+        <div>
+          <div class="signal-badge-text">Signal Protocol</div>
+          <div class="signal-badge-sub">X3DH + Double Ratchet</div>
+        </div>
+      </div>
+
+      <!-- Secondary window -->
+      <div class="chat-window secondary">
+        <div class="chat-header">
+          <div class="chat-avatar" style="background: var(--blue); color: #fff;">T</div>
+          <div>
+            <div class="chat-name">SyncT Group</div>
+            <div class="chat-status">3 members</div>
+          </div>
+        </div>
+        <div class="chat-body">
+          <div class="msg them">meeting at 3pm?</div>
+          <div class="msg me">confirmed ✓</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal">
+      <div class="section-tag">How it works</div>
+      <h2 class="section-title">Privacy in<br/>three steps.</h2>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <div class="step-title">Verify with WhatsApp OTP</div>
+            <div class="step-desc">Sign up with your phone number. We send a one-time code via WhatsApp — no email, no password, no data to leak.</div>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <div class="step-title">Keys generated on your device</div>
+            <div class="step-desc">Your encryption keys are created locally and never leave your phone. We hold public keys only — useless without your private key.</div>
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <div class="step-title">Messages encrypted before sending</div>
+            <div class="step-desc">Every message is encrypted on your device using the Signal Protocol. Our servers see only ciphertext — unreadable blobs.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECURITY ── -->
+<div class="security-section" id="security">
+  <div class="security-inner">
+    <div class="reveal">
+      <div class="section-tag">Under the hood</div>
+      <h2 class="section-title">Cryptography<br/>you can trust.</h2>
+      <p class="section-desc">SyncT is built on the same cryptographic foundations as Signal and WhatsApp — open, auditable, and battle-tested.</p>
+      <div class="security-pills">
+        <div class="pill"><div class="pill-dot"></div>Signal Protocol (X3DH)</div>
+        <div class="pill"><div class="pill-dot"></div>Double Ratchet Algorithm</div>
+        <div class="pill"><div class="pill-dot"></div>Curve25519 key exchange</div>
+        <div class="pill"><div class="pill-dot"></div>AES-256-GCM</div>
+        <div class="pill"><div class="pill-dot"></div>HMAC-SHA256</div>
+        <div class="pill"><div class="pill-dot"></div>Forward secrecy</div>
+        <div class="pill"><div class="pill-dot"></div>Break-in recovery</div>
+      </div>
+    </div>
+
+    <div class="terminal reveal">
+      <div class="terminal-bar">
+        <div class="dot red"></div>
+        <div class="dot yellow"></div>
+        <div class="dot green"></div>
+        <div class="terminal-title">synct — encryption.ts</div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="t-dim">// Signal Protocol key exchange</span></div>
+        <div><span class="t-blue">const</span> <span class="t-white">session</span> = <span class="t-blue">await</span> <span class="t-accent">buildSession</span>({</div>
+        <div>&nbsp;&nbsp;<span class="t-text">identityKey</span>: user.<span class="t-accent">publicKey</span>,</div>
+        <div>&nbsp;&nbsp;<span class="t-text">signedPreKey</span>: bundle.<span class="t-accent">signedPreKey</span>,</div>
+        <div>&nbsp;&nbsp;<span class="t-text">oneTimePreKey</span>: bundle.<span class="t-accent">preKey</span>,</div>
+        <div>});</div>
+        <div>&nbsp;</div>
+        <div><span class="t-dim">// Encrypt message — never leaves device as plaintext</span></div>
+        <div><span class="t-blue">const</span> <span class="t-white">ciphertext</span> = <span class="t-blue">await</span> session</div>
+        <div>&nbsp;&nbsp;.<span class="t-accent">encrypt</span>(message.<span class="t-text">content</span>);</div>
+        <div>&nbsp;</div>
+        <div><span class="t-dim">// Server stores only ↓ (unreadable)</span></div>
+        <div><span class="t-white">encrypted_blob</span>: <span class="t-accent">"a3f9c2b8e1..."</span> <span class="t-cursor"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CTA / DOWNLOAD ── -->
+<div class="cta-section" id="download">
+  <div class="reveal">
+    <h2 class="cta-title">Take back your<br/><em style="font-family: var(--font-serif); color: var(--accent);">conversations.</em></h2>
+    <p class="cta-sub">Free. No ads. No data mining. Just messaging — the way it should have always been.</p>
+
+    <div class="cta-actions">
+      <a href="#" class="store-btn">
+        <div class="store-icon">🍎</div>
+        <div>
+          <div class="store-sub">Download on the</div>
+          <div class="store-name">App Store</div>
+        </div>
+      </a>
+      <a href="#" class="store-btn">
+        <div class="store-icon">▶</div>
+        <div>
+          <div class="store-sub">Get it on</div>
+          <div class="store-name">Google Play</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="cta-note">
+      By Muhammad Taha Shah Gillani &nbsp;·&nbsp; Simple yet Networking Compatible
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-copy">
+    © 2026 SyncT. Built with care by <a href="#">Muhammad Taha Shah Gillani</a>.
+  </div>
+  <ul class="footer-links">
+    <li><a href="#">Privacy Policy</a></li>
+    <li><a href="#">Terms</a></li>
+    <li><a href="#">GitHub</a></li>
+    <li><a href="#">Contact</a></li>
+  </ul>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = (mx - 4) + 'px';
+    cursor.style.top = (my - 4) + 'px';
+  });
+
+  function animRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animRing);
+  }
+  animRing();
+
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      ring.style.width = '48px';
+      ring.style.height = '48px';
+      ring.style.borderColor = 'rgba(62,232,181,0.8)';
+    });
+    el.addEventListener('mouseleave', () => {
+      ring.style.width = '32px';
+      ring.style.height = '32px';
+      ring.style.borderColor = 'rgba(62,232,181,0.4)';
+    });
+  });
+
+  // Nav scroll effect
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => io.observe(el));
+</script>
+</body>
+</html>
